@@ -102,8 +102,13 @@ module KTSHung
 
         def source_name(e)
           n = e.name.to_s.strip
-          n = e.definition.name.to_s.strip if n.empty? && e.respond_to?(:definition)
-          n
+          return n unless n.empty?
+          # Group#definition and ComponentInstance#definition can be nil for an
+          # entity that has just been erased, so this cannot assume a receiver.
+          defn = e.respond_to?(:definition) ? e.definition : nil
+          defn ? defn.name.to_s.strip : ''
+        rescue StandardError
+          ''
         end
 
         # Returns [type, number] or [nil, nil].

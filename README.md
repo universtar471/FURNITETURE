@@ -55,16 +55,24 @@ remain the responsibility of the structural engineer and fabricator.
 ## Development
 
 ```
-ruby tools/syntax_check.rb   # parse every Ruby file
-ruby test/run_tests.rb       # offline unit tests (SketchUp API stubbed)
-ruby tools/build.rb          # package the .rbz
+ruby tools/syntax_check.rb    # parse every Ruby file
+ruby test/run_tests.rb        # 61 unit checks (pure logic)
+ruby test/run_integration.rb  # 105 end-to-end checks against a SketchUp simulator
+ruby tools/build.rb           # package the .rbz
 ```
 
-`test/sketchup_stub.rb` provides just enough of the SketchUp API to load and
-exercise the unit-convertible logic. Geometry creation, undo behaviour, the
-HtmlDialog bridge and toolbar registration are **not** covered by these tests
-and must be verified inside SketchUp — see `CHANGELOG.md` for the manual test
-checklist.
+`test/sketchup_stub.rb` is a minimal API stand-in for the unit tests.
+`test/sketchup_sim.rb` is a fuller simulator — real 4×4 transformation maths,
+bounding boxes that follow their group's transform, faces with normals and
+pushpull, entity collections, layers, materials, selection, attribute
+dictionaries, and an operation stack that raises on nesting — so
+`run_integration.rb` can actually execute every generator and every dialog
+callback.
+
+Neither can tell you whether solids are watertight, whether the model looks
+right, whether undo behaves in the UI, or whether the HtmlDialog and toolbar
+register. **Those must be verified inside SketchUp** — `CHANGELOG.md` carries
+the manual checklist.
 
 ## Layout
 

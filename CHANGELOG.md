@@ -68,6 +68,14 @@ Reviewed against the v1.0.0 RBZ. Every item below was a defect in that build.
   profile** passed a nil profile hash into the column generator. Both guarded.
 - **Columns double-counted in the BOM** would have followed from the new member
   factory path, so column geometry is drawn directly into its group.
+- **Duplicate fabrication marks.** The numbering counter was keyed on the whole
+  `[code, material, system]` group, but only `code` reaches the mark, so an
+  AZ100 wall panel and a Cemboard floor sheet both counted from 001 and emitted
+  the same `PFB-SHT-001-RA`. Every finalized project then reported
+  `DUPLICATE_MARK` errors against itself. Found by the integration suite; the
+  counter is now keyed on the code alone.
+- **`source_name` assumed a non-nil definition**, which an erased entity does
+  not have.
 - `require 'csv'` removed — `csv` is a bundled gem in newer Rubies and is not
   guaranteed loadable inside SketchUp. CSV writing (with quoting and a UTF-8 BOM
   for Excel) is now local.
@@ -96,18 +104,35 @@ Reviewed against the v1.0.0 RBZ. Every item below was a defect in that build.
 
 ## Verification performed
 
-- `ruby tools/syntax_check.rb` — 38/38 files parse.
-- `ruby test/run_tests.rb` — 61/61 checks pass (units, stock splitting, profile
+- `ruby tools/syntax_check.rb` — 40/40 files parse.
+- `ruby test/run_tests.rb` — 61/61 unit checks (units, stock splitting, profile
   geometry, source classification, CSV escaping, rule engine, column types).
-- Load test: every module loads and every constant referenced by `loader.rb`
-  resolves under the stub; `UI` is confirmed no longer shadowed.
-- `node --check` on `app.js`.
+- `ruby test/run_integration.rb` — **105 end-to-end checks** against
+  `test/sketchup_sim.rb`, a SketchUp API simulator with real 4×4 transformation
+  maths, transform-following bounding boxes, faces with normals and pushpull,
+  entity collections, layers, materials, selection, attribute dictionaries and
+  an operation stack that *raises on nesting*. It actually executes: source
+  scanning, column/wall/opening/floor/roof generation, connections in both
+  detail modes, update tracking, model check, production QA, numbering, BOM,
+  cut list, finalize, and all 40 HtmlDialog callbacks.
+  Measured there, among others: columns land on their placeholder centre at the
+  right height; I-sections stay 200 mm tall and 100 mm wide running along both
+  X and Y; a 5000 mm AZ100 wall yields 11 studs and 13 panels; no Cemboard sheet
+  exceeds stock; roof overhang extends the footprint by 600 mm per side; no
+  generated object is ever rescanned as a source; no operation is left open; a
+  self-referencing component does not hang any walker.
+- `node --check` on `app.js`; cross-checks that every `sketchup.*` call in the
+  page has a Ruby callback, every `window.render*` the Ruby side calls exists in
+  the page, every rail panel has a section, and every button id exists.
 - RBZ builds and its archive layout is correct.
 
 ## NOT verified — please test inside SketchUp 2026
 
-None of the following was executed against a real SketchUp; the stub cannot
-model geometry, undo or the HtmlDialog bridge.
+SketchUp has no Linux build, so none of this ran against a real SketchUp. The
+simulator executes the code and measures bounding boxes, but it cannot tell you
+whether solids are watertight, whether anything looks right on screen, whether
+undo behaves in the UI, whether the HtmlDialog actually renders, or whether the
+toolbar registers. Those need the real application:
 
 1. Install the RBZ; confirm the toolbar and menu appear and the panel opens.
 2. Setup Tags, then check the TAG panel lists all 23 tags with colours.

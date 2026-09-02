@@ -38,13 +38,21 @@ module KTSHung
           counters=Hash.new(0)
           count=0; preserved=0
 
-          # Reserve existing sequence values first, preventing duplicate new marks.
+          # The sequence counter is keyed on the code alone, because the code is
+          # the only part of the group that reaches the mark. Keying it on the
+          # full [code, material, system] group made two different families
+          # (say SHT|AZ100|wall and SHT|CEMBOARD|floor) each count from 001 and
+          # emit the same PFB-SHT-001-RA, which the QA then flagged as a
+          # duplicate fabrication mark on every finalized project.
+          #
+          # Reserve existing sequence values first, so a rerun cannot collide
+          # with a mark that is being preserved.
           generated.each do |e|
             mk=Core::Metadata.get(e,'mark','').to_s
             next if mk.empty?
-            key=code_group(e)
+            code=code_group(e).first
             if mk =~ /-(\d+)(?:-R[^-]+)?$/
-              counters[key]=[counters[key],$1.to_i].max
+              counters[code]=[counters[code],$1.to_i].max
             end
           end
 
@@ -55,8 +63,8 @@ module KTSHung
               preserved+=1
               next
             end
-            key=code_group(e); counters[key]+=1
-            base="#{prefix}-#{key[0]}-#{counters[key].to_s.rjust(3,'0')}"
+            key=code_group(e); counters[key[0]]+=1
+            base="#{prefix}-#{key[0]}-#{counters[key[0]].to_s.rjust(3,'0')}"
             code="#{base}-R#{revision}"
             Core::Metadata.set(e,'mark',code)
             Core::Metadata.set(e,'mark_base',base)
