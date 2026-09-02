@@ -1,0 +1,106 @@
+/* Prefab Structure Builder - panel styling.
+   Layout follows the reference design: dark left rail, light work area. */
+:root{
+  --ink:#16181d; --ink-soft:#5b6068; --line:#e2e5ea; --bg:#f2f3f5;
+  --card:#ffffff; --rail:#1c1f24; --rail-hover:#2a2e35; --accent:#111318;
+  --ok:#e8f5e9; --warn:#fff3cd; --err:#f8d7da; --info:#dbeafe;
+  --radius:8px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:13px/1.45 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  display:flex; flex-direction:column;
+}
+header{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:11px 16px; background:var(--rail); color:#fff; flex:0 0 auto;
+}
+header h1{margin:0; font-size:15px; font-weight:600; letter-spacing:.2px}
+header .sub{font-size:11px; opacity:.6}
+.badge{font-size:10px; border:1px solid #4a4f57; padding:4px 9px; border-radius:11px; opacity:.85; white-space:nowrap}
+
+.shell{display:flex; flex:1 1 auto; min-height:0}
+
+/* ---- left rail ---- */
+.rail{
+  flex:0 0 168px; background:var(--rail); color:#a8adb6;
+  display:flex; flex-direction:column; overflow-y:auto; padding-bottom:8px;
+}
+.rail button{
+  all:unset; display:flex; align-items:center; gap:9px; cursor:pointer;
+  padding:10px 14px; font-size:12px; letter-spacing:.4px; color:#a8adb6;
+  border-left:3px solid transparent;
+}
+.rail button:hover{background:var(--rail-hover); color:#fff}
+.rail button.active{background:#fff; color:var(--ink); border-left-color:var(--ink); font-weight:600}
+.rail .glyph{width:15px; text-align:center; font-size:13px; opacity:.9}
+.rail .spacer{flex:1 1 auto}
+.rail .rail-note{padding:9px 14px; font-size:10px; color:#666b73; line-height:1.4}
+
+/* ---- work area ---- */
+main{flex:1 1 auto; overflow-y:auto; padding:14px 16px; min-width:0}
+.panel{display:none}
+.panel.active{display:block}
+.panel > h2{margin:0 0 4px; font-size:16px; letter-spacing:.4px}
+.panel > .lede{margin:0 0 14px; color:var(--ink-soft); font-size:12px}
+
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:13px; margin-bottom:13px}
+.card > h3{margin:0 0 10px; font-size:12px; letter-spacing:.7px; text-transform:uppercase; color:var(--ink-soft)}
+h4{margin:16px 0 7px; font-size:12px; letter-spacing:.4px}
+
+button,select,input,textarea{font:inherit; color:inherit}
+button{
+  padding:7px 12px; border:1px solid #c9ced5; border-radius:5px;
+  background:#fff; cursor:pointer;
+}
+button:hover{border-color:#9aa1ab}
+button.primary{background:var(--accent); color:#fff; border-color:var(--accent)}
+button.primary:hover{background:#000}
+button.danger{color:#a4262c; border-color:#e8c4c6}
+button.mini{padding:4px 8px; font-size:11px}
+button:disabled{opacity:.45; cursor:not-allowed}
+select,input,textarea{padding:6px 8px; border:1px solid #c9ced5; border-radius:5px; background:#fff; width:100%}
+textarea{resize:vertical; min-height:56px}
+label{display:flex; flex-direction:column; gap:4px; font-size:11px; color:var(--ink-soft)}
+label.inline{flex-direction:row; align-items:center; gap:7px; color:var(--ink)}
+label.inline input{width:auto}
+
+.grid2{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+.grid3{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+.grid4{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px}
+.actions{display:flex; flex-wrap:wrap; gap:8px; margin-top:11px}
+.split{display:grid; grid-template-columns:190px minmax(0,1fr); gap:13px; align-items:start}
+
+.note{padding:9px 10px; background:#f7f8f9; border-left:3px solid #c9ced5; border-radius:0 4px 4px 0; font-size:11.5px; line-height:1.5; margin:9px 0}
+.note b{color:var(--ink)}
+.scroll{overflow-x:auto}
+table{width:100%; border-collapse:collapse; font-size:12px}
+th,td{padding:6px 8px; border-bottom:1px solid #eef0f2; text-align:left; white-space:nowrap; vertical-align:middle}
+th{font-size:10px; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-soft); font-weight:600}
+tbody tr:hover{background:#fafbfc}
+td.wrap{white-space:normal; min-width:220px}
+
+.listbox{border:1px solid var(--line); border-radius:6px; overflow:hidden; background:#fff}
+.listbox .item{padding:8px 10px; cursor:pointer; border-bottom:1px solid #f0f2f4; font-size:12px}
+.listbox .item:last-child{border-bottom:0}
+.listbox .item:hover{background:#f5f6f8}
+.listbox .item.active{background:var(--accent); color:#fff}
+.listbox .item .meta{display:block; font-size:10px; opacity:.65}
+
+.swatch{display:inline-block; width:26px; height:14px; border-radius:3px; border:1px solid rgba(0,0,0,.2); vertical-align:middle}
+.pill{display:inline-block; padding:2px 7px; border-radius:9px; font-size:10px; font-weight:600; letter-spacing:.3px}
+.pill.clean,.pill.ok{background:var(--ok)}
+.pill.changed,.pill.new,.pill.warning{background:var(--warn)}
+.pill.error{background:var(--err)}
+.pill.info{background:var(--info)}
+.empty{color:var(--ink-soft); font-style:italic}
+pre{background:#fbfbfc; border:1px solid var(--line); border-radius:6px; padding:10px; font-size:11px; white-space:pre-wrap; max-height:240px; overflow:auto; margin:0}
+footer{flex:0 0 auto; padding:7px 16px; font-size:10.5px; color:#8b9098; border-top:1px solid var(--line); background:#fff}
+
+@media (max-width:720px){
+  .rail{flex-basis:52px}
+  .rail button span.text{display:none}
+  .split{grid-template-columns:1fr}
+}

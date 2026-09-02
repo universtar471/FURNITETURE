@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prefab Structure Builder</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Prefab Structure Builder</h1>
+    <div class="sub">Semantic source &rarr; rule engine &rarr; generated model &rarr; QA &rarr; BOM</div>
+  </div>
+  <span class="badge">SketchUp 2026 &bull; v1.1.0</span>
+</header>
+
+<div class="shell">
+  <nav class="rail" id="rail">
+    <button data-panel="project"    class="active"><span class="glyph">&#9707;</span><span class="text">PROJECT</span></button>
+    <button data-panel="source"><span class="glyph">&#9906;</span><span class="text">SOURCE</span></button>
+    <button data-panel="column"><span class="glyph">&#8214;</span><span class="text">COLUMN</span></button>
+    <button data-panel="wall"><span class="glyph">&#9636;</span><span class="text">WALL</span></button>
+    <button data-panel="opening"><span class="glyph">&#9707;</span><span class="text">OPENING</span></button>
+    <button data-panel="floor"><span class="glyph">&#9707;</span><span class="text">FLOOR</span></button>
+    <button data-panel="roof"><span class="glyph">&#9651;</span><span class="text">ROOF</span></button>
+    <button data-panel="material"><span class="glyph">&#9707;</span><span class="text">MATERIAL</span></button>
+    <button data-panel="connection"><span class="glyph">&#10214;</span><span class="text">CONNECTION</span></button>
+    <button data-panel="tag"><span class="glyph">&#9873;</span><span class="text">TAG</span></button>
+    <button data-panel="update"><span class="glyph">&#8635;</span><span class="text">UPDATE</span></button>
+    <button data-panel="check"><span class="glyph">&#10003;</span><span class="text">CHECK</span></button>
+    <button data-panel="bom"><span class="glyph">&#9776;</span><span class="text">BOM</span></button>
+    <button data-panel="production"><span class="glyph">&#9733;</span><span class="text">PRODUCTION</span></button>
+    <div class="spacer"></div>
+    <div class="rail-note">Workflow<br>Scan &rarr; Set &rarr; Generate<br>&rarr; Check &rarr; Finalize &rarr; BOM</div>
+  </nav>
+
+  <main>
+
+  <!-- ============ PROJECT ============ -->
+  <section class="panel active" id="panel-project">
+    <h2>Project</h2>
+    <p class="lede">Presets are stored inside the SketchUp model and drive every generator's defaults.</p>
+
+    <div class="card">
+      <h3>Project preset</h3>
+      <div class="grid3">
+        <label>Project name<input id="prj_name"></label>
+        <label>Code prefix<input id="prj_prefix"></label>
+        <label>Project revision<input id="prj_revision"></label>
+        <label>Default floor height (mm)<input id="prj_floor_h" type="number" min="1"></label>
+        <label>Default column<select id="prj_col"></select></label>
+        <label>Default wall system<select id="prj_wall"><option>AZ100</option><option>NANO</option><option>PANEL100</option></select></label>
+        <label>Exterior opening frame<select id="prj_open_ext"></select></label>
+        <label>Interior opening frame<select id="prj_open_int"></select></label>
+        <label>Steel stock length (mm)<input id="prj_stock" type="number" min="1"></label>
+        <label>Cut kerf (mm)<input id="prj_kerf" type="number" min="0"></label>
+        <label>Floor primary<select id="prj_floor_p"></select></label>
+        <label>Floor secondary<select id="prj_floor_s"></select></label>
+        <label>Roof primary<select id="prj_roof_p"></select></label>
+        <label>Roof secondary<select id="prj_roof_s"></select></label>
+        <label class="inline"><input id="prj_preserve_marks" type="checkbox"> Preserve existing marks</label>
+      </div>
+      <div class="actions">
+        <button class="primary" id="btnSavePreset">Save Project Preset</button>
+        <button id="btnSavePresetFile">Save JSON</button>
+        <button id="btnLoadPresetFile">Load JSON</button>
+        <button class="danger" id="btnResetPreset">Reset</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Numbering &amp; report</h3>
+      <p class="lede">Marks look like <b>PFB-COL-001-RA</b>: prefix, group, sequence, revision.</p>
+      <div class="actions">
+        <button class="primary" id="btnNumbering">Apply / Refresh Numbering</button>
+        <button id="btnExportReport">Export Project Report CSV</button>
+      </div>
+      <div class="note" id="markedCount">No numbering applied yet.</div>
+      <h4>Report by system</h4>
+      <div class="scroll"><table>
+        <thead><tr><th>System</th><th>Qty</th><th>Steel</th><th>Sheets</th><th>Categories</th></tr></thead>
+        <tbody id="reportRows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ============ SOURCE ============ -->
+  <section class="panel" id="panel-source">
+    <h2>Source Manager</h2>
+    <p class="lede">Placeholder Groups/Components are recognised by name (COLUMN 1, WALL 2, DOOR 1&hellip;) and then by Tag. Generated prefab output is never treated as a source.</p>
+    <div class="card">
+      <div class="actions" style="margin:0 0 11px">
+        <button class="primary" id="btnScan">Scan Model</button>
+        <button id="btnSetupTags">Setup Tags</button>
+      </div>
+      <div class="note" id="scanSummary">Press Scan Model.</div>
+      <div class="scroll"><table>
+        <thead><tr><th>Type</th><th>Name</th><th>Source</th><th>Qty</th><th>Nested</th><th></th></tr></thead>
+        <tbody id="scanRows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ============ COLUMN ============ -->
+  <section class="panel" id="panel-column">
+    <h2>Column Manager</h2>
+    <p class="lede">Define reusable column types, then apply one to the selected COLUMN placeholders.</p>
+
+    <div class="card">
+      <div class="actions" style="margin:0 0 11px">
+        <button id="btnColNew">+ New Type</button>
+        <button id="btnColDup">Duplicate</button>
+        <button id="btnColRename">Rename</button>
+        <button class="danger" id="btnColDelete">Delete</button>
+      </div>
+      <div class="split">
+        <div>
+          <h4 style="margin-top:0">Column types</h4>
+          <div class="listbox" id="columnTypeList"></div>
+        </div>
+        <div>
+          <div class="grid2">
+            <label>Profile<select id="colProfile"></select></label>
+            <label>Material<select id="colMaterial"></select></label>
+            <label>Height mode<select id="colHeightMode">
+              <option value="level">Auto (by level)</option>
+              <option value="fixed">Fixed height</option>
+              <option value="source">From placeholder</option>
+            </select></label>
+            <label>Fixed height (mm)<input id="colHeight" type="number" min="1"></label>
+            <label>Rotation (&deg;)<select id="colRotation">
+              <option value="0">0&deg;</option><option value="45">45&deg;</option>
+              <option value="90">90&deg;</option><option value="135">135&deg;</option>
+            </select></label>
+            <label>Structural role<select id="colRole"></select></label>
+            <label>Base level<select id="colBaseLevel"></select></label>
+            <label>Top level<select id="colTopLevel"></select></label>
+          </div>
+          <div class="grid2">
+            <label>Tag<input id="colTag" readonly></label>
+            <label>Colour<div><span class="swatch" id="colSwatch"></span> <span id="colColorText"></span></div></label>
+          </div>
+          <label>Description<textarea id="colDescription"></textarea></label>
+          <div class="note" id="colResolved"></div>
+          <div class="actions">
+            <button class="primary" id="btnColSave">Save Types</button>
+            <button id="btnColGenerate">Generate Columns from Selection</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Storey levels</h3>
+      <p class="lede">Level mode measures a column from its base level to its top level.</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Level name</th><th>Elevation (mm)</th><th></th></tr></thead>
+        <tbody id="levelRows"></tbody>
+      </table></div>
+      <div class="actions">
+        <button id="btnLevelAdd">+ Add Level</button>
+        <button class="primary" id="btnLevelSave">Save Levels</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ WALL ============ -->
+  <section class="panel" id="panel-wall">
+    <h2>Wall Generator</h2>
+    <p class="lede">Select WALL placeholders. The rough bounding box becomes the wall envelope; the long horizontal axis becomes the wall run.</p>
+    <div class="card">
+      <div class="grid2">
+        <label>Wall type<select id="wallType"><option>AZ100</option><option>NANO</option><option>PANEL100</option></select></label>
+        <label>Max spacing (mm)<input id="wallSpacing" type="number" value="500" min="1"></label>
+      </div>
+      <div class="note">AZ100 &rarr; 25&times;25 vertical studs @ &le;500, 400 mm panels. NANO &rarr; 25&times;25 horizontal rails @ &le;500. PANEL100 &rarr; no steel frame, 1000 mm panels.</div>
+      <div class="actions"><button class="primary" id="btnGenerateWalls">Generate Selected Walls</button></div>
+    </div>
+  </section>
+
+  <!-- ============ OPENING ============ -->
+  <section class="panel" id="panel-opening">
+    <h2>Door / Window Types</h2>
+    <p class="lede">Placeholders are grouped by name (DOOR 1, WINDOW 2&hellip;). Dimensions are clear-opening sizes in millimetres.</p>
+    <div class="card">
+      <div class="scroll"><table id="openingTable">
+        <thead><tr><th>ID</th><th>Qty</th><th>Width</th><th>Height</th><th>Sill</th><th>Location</th><th>Frame</th></tr></thead>
+        <tbody id="openingRows"></tbody>
+      </table></div>
+      <div class="actions">
+        <button id="btnSaveOpenings">Save Table</button>
+        <button class="primary" id="btnGenerateOpenings">Generate All Frames</button>
+      </div>
+      <div class="note">Frames are built inside the nearest recognised WALL placeholder. Doors start at wall base; windows start at the sill height.</div>
+    </div>
+  </section>
+
+  <!-- ============ FLOOR ============ -->
+  <section class="panel" id="panel-floor">
+    <h2>Floor System</h2>
+    <p class="lede">Select a FLOOR or BALCONY placeholder. Its footprint becomes the framing boundary.</p>
+    <div class="card">
+      <div class="grid2">
+        <label>Floor type<select id="floorType">
+          <option value="GROUND_STEEL_CEMBOARD">Ground &ndash; Steel + Cemboard</option>
+          <option value="UPPER_DECK">Upper &ndash; Deck</option>
+          <option value="UPPER_I_CEMBOARD">Upper &ndash; I + Cemboard</option>
+          <option value="BALCONY_WPC">Balcony &ndash; Steel + WPC</option>
+        </select></label>
+        <label>Secondary direction<select id="floorDirection">
+          <option value="auto">Auto &ndash; shortest span</option><option value="x">X</option><option value="y">Y</option>
+        </select></label>
+      </div>
+      <div class="grid3">
+        <label>Primary<select id="floorPrimary"></select></label>
+        <label>Secondary<select id="floorSecondary"></select></label>
+        <label>Max spacing (mm)<input id="floorSpacing" type="number" value="500" min="1"></label>
+      </div>
+      <div class="note">Perimeter primary frame &rarr; evenly distributed secondary beams &rarr; finish layer. Cemboard is split to the stock sheet size with FULL/CUT pieces recorded for the BOM. I-sections stay upright whichever direction the beam runs.</div>
+      <div class="actions"><button class="primary" id="btnGenerateFloor">Generate Selected Floor</button></div>
+    </div>
+  </section>
+
+  <!-- ============ ROOF ============ -->
+  <section class="panel" id="panel-roof">
+    <h2>Roof System</h2>
+    <p class="lede">Mono and Gable use the placeholder footprint. Hip / From Faces reads the rough roof faces inside the group.</p>
+    <div class="card">
+      <div class="grid2">
+        <label>Roof type<select id="roofType">
+          <option value="MONO">Mono &ndash; one direction</option>
+          <option value="GABLE">Gable &ndash; two directions</option>
+          <option value="HIP_FACES">Hip / From Faces</option>
+        </select></label>
+        <label>Direction<select id="roofDirection">
+          <option value="x+">X+ high</option><option value="x-">X&minus; high</option>
+          <option value="y+">Y+ high</option><option value="y-">Y&minus; high</option>
+        </select></label>
+      </div>
+      <div class="grid3">
+        <label id="roofHighLabel">High / ridge (mm)<input id="roofHigh" type="number" value="1200"></label>
+        <label>Low height (mm)<input id="roofLow" type="number" value="300"></label>
+        <label>Ridge position %<input id="ridgePos" type="number" value="50" min="5" max="95"></label>
+      </div>
+      <h4>Overhang (mm)</h4>
+      <div class="grid4">
+        <label>Front<input id="ohFront" type="number" value="600"></label>
+        <label>Back<input id="ohBack" type="number" value="600"></label>
+        <label>Left<input id="ohLeft" type="number" value="600"></label>
+        <label>Right<input id="ohRight" type="number" value="600"></label>
+      </div>
+      <div class="grid3">
+        <label>Secondary max spacing (mm)<input id="roofSpacing" type="number" value="1000" min="1"></label>
+        <label>Roof cover<select id="roofCover"><option value="CORRUGATED">Corrugated sheet</option><option value="TILE">Tile-look sheet</option></select></label>
+        <label class="inline" style="padding-top:18px"><input id="roofSoffit" type="checkbox" checked> Nano soffit</label>
+      </div>
+      <div class="note">Roof columns 100&times;100; perimeter and main frames 50&times;100; secondary 30&times;60. Main rafters try to pass through recognised COLUMN placeholder positions.</div>
+      <div class="actions"><button class="primary" id="btnGenerateRoof">Generate Selected Roof</button></div>
+    </div>
+  </section>
+
+  <!-- ============ MATERIAL ============ -->
+  <section class="panel" id="panel-material">
+    <h2>Material &amp; Stock</h2>
+    <p class="lede">Generated sheets never exceed the selected stock size &mdash; oversized areas split into FULL and CUT pieces.</p>
+    <div class="card">
+      <h3>Preset</h3>
+      <div class="grid2">
+        <label>Preset<select id="materialPreset"></select></label>
+        <label>Family<input id="matFamily" readonly></label>
+      </div>
+      <div class="grid4">
+        <label>Stock W<input id="matW" type="number"></label>
+        <label>Stock L<input id="matL" type="number"></label>
+        <label>Thickness<input id="matT" type="number"></label>
+        <label>Effective W<input id="matEff" type="number"></label>
+      </div>
+      <div class="grid2">
+        <label>Joint support<select id="matSupport"></select></label>
+        <label class="inline" style="padding-top:18px"><input id="matRotate" type="checkbox"> Allow rotate</label>
+      </div>
+      <h4>Save as project preset</h4>
+      <div class="grid2">
+        <label>ID<input id="customMatId" placeholder="MY_CEMBOARD"></label>
+        <label>Family<select id="customFamily"><option>CEMBOARD</option><option>NANO</option><option>AZ100</option><option>WPC</option><option>ROOF_SHEET</option></select></label>
+      </div>
+      <div class="actions"><button class="primary" id="btnSaveMaterial">Save Current Values as Project Preset</button></div>
+    </div>
+
+    <div class="card">
+      <h3>Stock split preview</h3>
+      <div class="grid2">
+        <label>Required width (mm)<input id="reqW" type="number" value="5200"></label>
+        <label>Required length (mm)<input id="reqL" type="number" value="7600"></label>
+      </div>
+      <div class="actions"><button id="btnPreviewStock">Calculate Split</button></div>
+      <div class="note" id="stockPreview">Choose a preset and calculate.</div>
+    </div>
+
+    <div class="card">
+      <h3>Generated sheet check</h3>
+      <div class="actions" style="margin:0 0 11px"><button id="btnCheckStock">Check Model Stock Limits</button></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Name</th><th>Material</th><th>Actual</th><th>Stock</th><th>Status</th></tr></thead>
+        <tbody id="stockRows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ============ CONNECTION ============ -->
+  <section class="panel" id="panel-connection">
+    <h2>Connection Engine</h2>
+    <p class="lede">Creates connection nodes between generated structural members. Types and relationships are automated; plate, bolt and weld sizes are editable placeholders.</p>
+    <div class="card">
+      <div class="grid2">
+        <label>Detail mode<select id="connDetail">
+          <option value="concept">Concept &mdash; plate / weld marker only</option>
+          <option value="fabrication">Fabrication preview &mdash; plate + bolt group</option>
+        </select></label>
+        <label>Manual rule<select id="connRule"></select></label>
+      </div>
+      <div class="actions">
+        <button class="primary" id="btnAutoConnections">Auto Generate Compatible Connections</button>
+        <button id="btnConnectSelected">Connect 2 Selected Members</button>
+        <button id="btnRefreshConnections">Refresh List</button>
+      </div>
+      <div class="note"><b>Rules:</b> I&nbsp;beam &harr; I&nbsp;column &rarr; plate + bolts &bull; I&nbsp;beam &harr; SHS100 column &rarr; direct weld &bull; secondary I &harr; primary I &rarr; bolted plate &bull; roof 50&times;100 &harr; SHS100 &rarr; direct weld &bull; upper SHS100 column &harr; deck/I floor &rarr; base plate (manual pairing).</div>
+      <div class="scroll"><table>
+        <thead><tr><th>Name</th><th>Rule</th><th>A</th><th>B</th><th>Mode</th></tr></thead>
+        <tbody id="connectionRows"></tbody>
+      </table></div>
+      <div class="note"><b>Engineering boundary:</b> these are modelling representations. Plate thickness, bolt count/diameter, edge distance and weld size are not a structural design approval.</div>
+    </div>
+  </section>
+
+  <!-- ============ TAG ============ -->
+  <section class="panel" id="panel-tag">
+    <h2>Tag &amp; Colour System</h2>
+    <p class="lede">Each steel profile owns a Tag and a colour so a generated model reads at a glance.</p>
+    <div class="card">
+      <div class="actions" style="margin:0 0 11px">
+        <button class="primary" id="btnSetupTags2">Create / Repair Tags</button>
+        <button id="btnRefreshTags">Refresh</button>
+      </div>
+      <div class="scroll"><table>
+        <thead><tr><th>Tag</th><th>Profile</th><th>Colour</th><th>In model</th><th>Visible</th></tr></thead>
+        <tbody id="tagRows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ============ UPDATE ============ -->
+  <section class="panel" id="panel-update">
+    <h2>Live Update / Change Tracking</h2>
+    <p class="lede">Source placeholders stay the authority. A lightweight signature of each source is stored, and only changed ones are regenerated.</p>
+    <div class="card">
+      <div class="actions" style="margin:0 0 11px">
+        <button id="btnBaseline">Save Current Baseline</button>
+        <button class="primary" id="btnUpdateChanged">Update Changed Sources</button>
+        <button id="btnUpdateSelected">Update Selected Sources</button>
+        <button id="btnRefreshUpdate">Refresh Status</button>
+      </div>
+      <div class="note"><b>Tracked:</b> source name, Tag, transformation and world bounding box. Generated roots are rebuilt by <code>source_id</code>. This is a controlled update, not a background observer &mdash; run it after editing placeholders.</div>
+      <div class="scroll"><table>
+        <thead><tr><th>Source</th><th>Type</th><th>Depth</th><th>Status</th><th></th></tr></thead>
+        <tbody id="updateRows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ============ CHECK ============ -->
+  <section class="panel" id="panel-check">
+    <h2>Model Checker</h2>
+    <p class="lede">Checks modelling consistency and rule violations. It is not a structural load-capacity certification.</p>
+    <div class="card">
+      <div class="actions" style="margin:0 0 11px">
+        <button class="primary" id="btnCheckModel">Run Model Check</button>
+        <button id="btnFixChanged">Fix Changed Sources</button>
+        <button id="btnCheckConnections">Generate Connections</button>
+      </div>
+      <div class="note" id="checkSummary">Run Model Check.</div>
+      <div class="scroll"><table>
+        <thead><tr><th>Level</th><th>Code</th><th>Object</th><th>Issue / suggested action</th><th></th></tr></thead>
+        <tbody id="checkRows"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- ============ BOM ============ -->
+  <section class="panel" id="panel-bom">
+    <h2>BOM / Cut List / Material Summary</h2>
+    <p class="lede">Quantities are read from generated prefab metadata. Bar packing is a planning estimate, not a fabrication optimiser.</p>
+    <div class="card">
+      <div class="actions" style="margin:0 0 11px">
+        <button class="primary" id="btnRefreshBOM">Refresh BOM</button>
+        <button id="btnExportBOM">Export BOM CSV</button>
+        <button id="btnExportCutList">Export Cut List CSV</button>
+      </div>
+      <div class="note" id="bomSummary">Refresh BOM after generating or updating the model.</div>
+      <h4>Bill of materials</h4>
+      <div class="scroll"><table>
+        <thead><tr><th>Category</th><th>Item</th><th>System</th><th>Role</th><th>Qty</th><th>Length</th><th>Area</th></tr></thead>
+        <tbody id="bomRows"></tbody>
+      </table></div>
+      <h4>Steel cut list</h4>
+      <div class="scroll"><table>
+        <thead><tr><th>Profile</th><th>Cut length</th><th>Qty</th><th>Total</th><th>Roles</th></tr></thead>
+        <tbody id="cutRows"></tbody>
+      </table></div>
+      <h4>Stock-bar estimate</h4>
+      <div class="scroll"><table>
+        <thead><tr><th>Profile</th><th>Bars</th><th>Cuts</th><th>Oversize</th><th>Purchase</th><th>Waste</th></tr></thead>
+        <tbody id="stockPlanRows"></tbody>
+      </table></div>
+      <h4>Sheet / finish material summary</h4>
+      <div class="scroll"><table>
+        <thead><tr><th>Material</th><th>Preset</th><th>Pieces</th><th>FULL/CUT</th><th>Area</th><th>Min stock*</th></tr></thead>
+        <tbody id="matSummaryRows"></tbody>
+      </table></div>
+      <div class="note"><b>*Min stock</b> is an area lower bound, not a 2D nesting guarantee.</div>
+    </div>
+  </section>
+
+  <!-- ============ PRODUCTION ============ -->
+  <section class="panel" id="panel-production">
+    <h2>Production Centre</h2>
+    <p class="lede">Scan &rarr; Generate / Update &rarr; Model Check &rarr; Finalize &rarr; BOM / Cut List / Report.</p>
+    <div class="card">
+      <div class="actions" style="margin:0 0 11px">
+        <button class="primary" id="btnFinalize">Finalize Project</button>
+        <button id="btnProductionCheck">Run Production QA</button>
+        <button id="btnRefreshRules">Refresh Rules</button>
+      </div>
+      <div class="note" id="finalizeResult">Finalize creates or repairs Tags, preserves or assigns marks, saves the source baseline and records the project revision.</div>
+      <h4>Production status</h4>
+      <div class="note" id="productionStatus"></div>
+      <h4>Production QA</h4>
+      <div class="note" id="productionSummary"></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Severity</th><th>Code</th><th>Object</th><th>Issue / action</th><th></th></tr></thead>
+        <tbody id="productionRows"></tbody>
+      </table></div>
+      <h4>Unified rule engine</h4>
+      <pre id="rulePreview"></pre>
+      <div class="note"><b>Scope:</b> QA covers plugin consistency, source/update state, metadata, marks, stock rules and connection coverage. It does not certify structural capacity, welding, bolts or code compliance.</div>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<footer>Semantic prefab modelling for SketchUp &bull; generated geometry is a modelling aid, not an engineering approval.</footer>
+<script src="app.js"></script>
+</body>
+</html>
